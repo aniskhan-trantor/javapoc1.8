@@ -82,4 +82,16 @@ Settled by the person's answer to JAVAPOC-Q4 (all three defaults accepted): this
 - Temurin 8 on a hosted runner, because the baseline was measured on Temurin 1.8.0_512.
 
 ### Criteria
-Proposed to the person as the default set (on the card). They are the person's to write; the final text is copied from their answer.
+Written by the person (answer to JAVAPOC-Q5, all four defaults accepted; copied word for word to the card description):
+- AC1: A pipeline definition in the repository runs 'mvn -B test -pl common,spark-job' on Java 8 for every pull request and every push to main.
+- AC2: On the pull request, that run passes: all common tests and all spark-job tests pass, and the HBase-dependent tests may be skipped.
+- AC3: The change adds or edits no file other than the pipeline definition and the card file; the existing tests are unchanged.
+- AC4: The pipeline check is named 'test', so a person can require it on main.
+
+### Fresh-context read of the design (Plan exit criterion)
+A helper with no prior context read this file, the three poms and the HBase test. No blocking finding: spark-job depends only on `common`, the reactor orders it, nothing needs credentials, Docker or HBase, and the HBase test skips itself. Four minor findings, all resolved in the design:
+1. The check shows in the UI as `<workflow name> / test`: the workflow gets `name: CI`; the job id and name stay `test` (AC4 is about the job name; unchanged).
+2. A failing test must fail the job: Surefire's default does this; the workflow sets no `-Dmaven.test.failure.ignore`. AC2 is read from the first run (roadmap step 2).
+3. A cold Maven cache downloads Spark, Hadoop and HBase: add `timeout-minutes: 20` to the job.
+4. Superseded pull request runs: add a `concurrency` group that cancels in-progress runs on the same ref for pull requests.
+Criteria untouched. The additions sit in the same single file, so AC3 holds.
