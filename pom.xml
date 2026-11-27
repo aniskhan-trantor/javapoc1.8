@@ -25,7 +25,7 @@
     <spark.version>2.4.8</spark.version>
     <hbase.version>1.4.13</hbase.version>
     <hadoop.version>2.10.1</hadoop.version>
-    <spring.version>4.3.30.RELEASE</spring.version>
+    <spring.version>5.3.39</spring.version>
     <activiti.version>5.22.0</activiti.version>
     <jackson.version>2.9.10.8</jackson.version>
     <jetty.version>9.4.44.v20210927</jetty.version>
@@ -36,6 +36,14 @@
 
   <dependencyManagement>
     <dependencies>
+      <!-- One Spring version for every Spring module, including the ones activiti-spring pulls in -->
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-framework-bom</artifactId>
+        <version>${spring.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>com.example.salesbatch</groupId>
         <artifactId>common</artifactId>
