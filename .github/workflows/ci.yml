@@ -5,18 +5,23 @@ on:
   push:
     branches: [main]
 
+# The token only reads the repository: nothing here pushes, comments or publishes.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # The required check. Java 8 is the target of the batch job's cluster (EMR 5.36).
   test:
     name: test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '8'
@@ -24,10 +29,31 @@ jobs:
       - name: Run tests
         run: mvn -B test -pl common,spark-job,workflow-app
 
-  # Java 17 migration, step 1: measure what breaks on newer JDKs. Compiles with --release 8, so only the
-  # toolchain and the runtime change. Never blocks a merge (continue-on-error); read the result per module.
-  jdk-compat:
-    name: jdk-compat (JDK ${{ matrix.java }})
+  # Java 17 migration: common and workflow-app already pass on JDK 11 and 17 (compiled with --release 8,
+  # so only the toolchain and the runtime change). This job fails the run if that regresses.
+  java-compat:
+    name: java-compat (JDK ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['11', '17']
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Run common and workflow-app tests on JDK ${{ matrix.java }} (compiled with --release 8)
+        run: mvn -B test -pl common,workflow-app -Dmaven.compiler.release=8
+
+  # spark-job cannot run on JDK 11 or 17 until Spark 2.4 and Scala 2.11 are upgraded (2 tests fail with
+  # "Unsupported class file major version"). Kept as a measurement that never blocks a merge: when it turns
+  # green, move spark-job into java-compat.
+  spark-java-compat:
+    name: spark-java-compat (JDK ${{ matrix.java }}, known failing)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true
@@ -36,11 +62,11 @@ jobs:
       matrix:
         java: ['11', '17']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: ${{ matrix.java }}
           cache: maven
-      - name: Run tests on JDK ${{ matrix.java }} (compiled with --release 8)
-        run: mvn -B -fae test -pl common,spark-job,workflow-app -Dmaven.compiler.release=8
+      - name: Run spark-job tests on JDK ${{ matrix.java }} (compiled with --release 8)
+        run: mvn -B test -pl spark-job -am -Dmaven.compiler.release=8
