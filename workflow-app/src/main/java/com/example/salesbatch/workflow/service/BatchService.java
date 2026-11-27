@@ -48,9 +48,38 @@ public class BatchService {
         return instance.getId();
     }
 
+    /**
+     * How long approve() waits for the approval task to appear while the run says it is WAITING_APPROVAL, in
+     * milliseconds (-Dapproval.task.wait.ms, default 5000).
+     */
+    private static long taskWaitMillis() {
+        return Long.getLong("approval.task.wait.ms", 5000L);
+    }
+
+    /**
+     * The audit status becomes WAITING_APPROVAL inside the engine transaction that also creates the approval task,
+     * and the task is only visible to other threads once that transaction has committed. A client that sees the
+     * status and approves at once can therefore arrive first; wait a little for the task in that case, and only then.
+     */
+    private List<Task> approvalTasks(String processInstanceId) {
+        long deadline = System.currentTimeMillis() + taskWaitMillis();
+        while (true) {
+            List<Task> tasks = taskService.createTaskQuery().processInstanceId(processInstanceId).taskDefinitionKey("approval").list();
+            if (!tasks.isEmpty() || !"WAITING_APPROVAL".equals(status(processInstanceId)) || System.currentTimeMillis() >= deadline) {
+                return tasks;
+            }
+            try {
+                Thread.sleep(25);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return tasks;
+            }
+        }
+    }
+
     /** Completes the approval task of a run. */
     public void approve(String processInstanceId, boolean approved, String approver) {
-        List<Task> tasks = taskService.createTaskQuery().processInstanceId(processInstanceId).taskDefinitionKey("approval").list();
+        List<Task> tasks = approvalTasks(processInstanceId);
         if (tasks.isEmpty()) {
             throw new IllegalStateException("No pending approval for process instance " + processInstanceId);
         }
