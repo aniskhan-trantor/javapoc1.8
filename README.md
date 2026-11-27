@@ -406,6 +406,10 @@ Defaults are in `workflow-app/src/main/resources/application.properties`. Overri
 | Property | Default | Meaning |
 |---|---|---|
 | `server.port` | `8080` | HTTP port (the VS Code configs use `8081`) |
+| `server.host` | `127.0.0.1` | Address the API listens on. The server refuses to start on any other address unless `approvers` is set |
+| `approvers` (or env `APPROVERS`) | empty | `name:token,name:token` (tokens of 16 or more characters). When set, `POST /batches/{id}/approve` needs `Authorization: Bearer <token>` and the approver recorded is the token's name, not the `approver` parameter. When empty, approval is open, which is only safe on `127.0.0.1` |
+| `batch.input.dir` | the temp folder | `POST /batches` only reads a `csvPath` inside this folder (uploads are saved in the temp folder) |
+| `upload.max.bytes` | `52428800` (50 MB) | Largest file `POST /batches/upload` accepts |
 | `report.dir` | `/tmp/sales-batch-reports` | Where reports are written |
 | `spark.submit.command` | `spark-submit` | Spark launcher on the PATH |
 | `spark.master` | `yarn` | `local[*]` for local runs |

@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -37,15 +38,30 @@ public class BatchController {
         public void setBusinessDate(String businessDate) { this.businessDate = businessDate; }
     }
 
+    /** Thrown when approvers are configured and the caller did not present a valid token. */
+    static class AuthRequiredException extends RuntimeException {
+        AuthRequiredException() {
+            super("approver authentication required");
+        }
+    }
+
     private final BatchService batchService;
+    private final ApproverAuth approverAuth;
+
+    /** Open approval (no approvers configured). Used by tests that build the controller by hand. */
+    public BatchController(BatchService batchService) {
+        this(batchService, ApproverAuth.open());
+    }
 
     @Autowired
-    public BatchController(BatchService batchService) {
+    public BatchController(BatchService batchService, ApproverAuth approverAuth) {
         this.batchService = batchService;
+        this.approverAuth = approverAuth;
     }
 
     @RequestMapping(method = RequestMethod.POST)
     public ResponseEntity<Map<String, String>> start(@RequestBody StartRequest request) {
+        InputFiles.requireInsideRoot(request.getCsvPath());
         String id = batchService.start(request.getCsvPath(), request.getBusinessDate());
         Map<String, String> body = new HashMap<>();
         body.put("processInstanceId", id);
@@ -89,12 +105,27 @@ public class BatchController {
     @RequestMapping(value = "/{id}/approve", method = RequestMethod.POST)
     public ResponseEntity<Map<String, String>> approve(@PathVariable("id") String id,
                                                        @RequestParam(value = "approved", defaultValue = "true") boolean approved,
-                                                       @RequestParam(value = "approver", defaultValue = "unknown") String approver) {
+                                                       @RequestParam(value = "approver", defaultValue = "unknown") String approver,
+                                                       @RequestHeader(value = "Authorization", required = false) String authorization) {
+        if (approverAuth.enabled()) {
+            String who = approverAuth.identify(authorization);
+            if (who == null) {
+                throw new AuthRequiredException();
+            }
+            approver = who; // the identity of the token, never the name the caller sent
+        }
         batchService.approve(id, approved, approver);
         Map<String, String> body = new HashMap<>();
         body.put("processInstanceId", id);
         body.put("status", batchService.status(id));
         return ResponseEntity.ok(body);
+    }
+
+    @ExceptionHandler(AuthRequiredException.class)
+    public ResponseEntity<Map<String, String>> unauthorized(AuthRequiredException e) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).header("WWW-Authenticate", "Bearer").body(body);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
