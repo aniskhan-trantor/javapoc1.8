@@ -118,3 +118,9 @@ After the first green run, push one throwaway commit that changes the command in
 ### Gaps
 - No executable test exists for AC1 to AC4; they are read from the pipeline's own record, which is also what Verify has to use.
 - AC2's counts come from the baseline in Assess (30, and 5 passed with 2 skipped); the first run is the first time they are measured on a hosted runner.
+
+## Build, Engie, 2026-11-27 (in progress)
+
+- Step 1 done: `.github/workflows/ci.yml` added (workflow `CI`, job `test`, triggers pull_request and push to main, Temurin 8 with Maven cache, `mvn -B test -pl common,spark-job`, 20 minute timeout, concurrency group cancelling superseded PR runs), pushed on `card/JAVAPOC-2` (commit 73880c8).
+- Step 2 not done: `gh` calls (pull request, run list, run log) were refused by the permission system in this session, so I could not open the draft pull request, read the first run, run the sensitivity check, or mark the PR ready. No test or source file was touched (AC3).
+- Still to do: open or find the pull request, read the run on the latest commit (expect common 30 pass; spark-job 7 run, 2 skipped), run Tess's sensitivity check (throwaway commit switching to `-pl workflow-app`, expect red, then `git revert`), link the red run, mark ready.
