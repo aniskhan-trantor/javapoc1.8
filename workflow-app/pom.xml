@@ -14,6 +14,17 @@
     <dependency>
       <groupId>com.example.salesbatch</groupId>
       <artifactId>common</artifactId>
+      <exclusions>
+        <!-- log4j 1.2 is end of life and has critical vulnerabilities. This service logs through logback; the HBase
+             client's log4j calls go through log4j-over-slf4j below. (spark-job keeps log4j: Spark 2.4 needs it.) -->
+        <exclusion><groupId>log4j</groupId><artifactId>log4j</artifactId></exclusion>
+        <exclusion><groupId>org.slf4j</groupId><artifactId>slf4j-log4j12</artifactId></exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>log4j-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
@@ -94,6 +105,30 @@
   <build>
     <finalName>workflow-app</finalName>
     <plugins>
+      <plugin>
+        <!-- Keeps log4j 1.2 (end of life, critical CVEs) out of this service for good -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.4.1</version>
+        <executions>
+          <execution>
+            <id>ban-log4j-1</id>
+            <phase>validate</phase>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <bannedDependencies>
+                  <excludes>
+                    <exclude>log4j:log4j</exclude>
+                    <exclude>org.slf4j:slf4j-log4j12</exclude>
+                  </excludes>
+                  <message>log4j 1.2 must not be on workflow-app's classpath; use logback (log4j-over-slf4j bridges old callers).</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
