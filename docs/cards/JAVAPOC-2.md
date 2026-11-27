@@ -95,3 +95,26 @@ A helper with no prior context read this file, the three poms and the HBase test
 3. A cold Maven cache downloads Spark, Hadoop and HBase: add `timeout-minutes: 20` to the job.
 4. Superseded pull request runs: add a `concurrency` group that cancels in-progress runs on the same ref for pull requests.
 Criteria untouched. The additions sit in the same single file, so AC3 holds.
+
+## Test design, Tess, 2026-11-27
+
+### Decision: all four criteria are observed, no test file is committed
+Every criterion here is about a pipeline definition, a pipeline run, or the list of files in the change. AC1 and AC4 could be checked by a script that reads `.github/workflows/ci.yml`, but any test file I add is a file other than the pipeline definition and the card file, and AC3 forbids that. I may not weaken AC3, and a test that breaks AC3 would fail the card by existing. So no test file is added; each criterion is observed as below (decided under SA-3; nWave `distill` produces executable tests and has nothing to produce here, so it was not run). The pipeline-on-the-test-commit exit criterion is exempt for this reason: the test commit adds nothing for a pipeline to run, and before the build there is no pipeline at all, which is the failing state of every criterion.
+
+### How each criterion is observed (Verify follows this, source-blind, on the pull request's head)
+| Criterion | Observation | Passes when |
+|---|---|---|
+| AC1 | `gh run list --branch card/JAVAPOC-2` and the run's log; the trigger is read from the run's event (`pull_request`), and a run on main after the merge shows `push` | The log shows `mvn -B test -pl common,spark-job` under a Java 1.8 JDK; events `pull_request` and `push` on main both appear |
+| AC2 | `gh pr view --json statusCheckRollup` and `gh run view --log` on the head commit | Run concludes success; log shows common 30 run, 0 failed; spark-job 7 run, 0 failed, at most 2 skipped (the HBase test); Reactor SUCCESS |
+| AC3 | `gh pr view --json files` (or `git diff --name-only main...head`) | Files are only `.github/workflows/ci.yml` and `docs/cards/JAVAPOC-2.md` (and other files under `docs/` from agents, per SA-1); no path under `common/`, `spark-job/`, `workflow-app/` `src/` or any `pom.xml` |
+| AC4 | `gh pr view --json statusCheckRollup` | A check whose name is exactly `test` (shown by GitHub as `CI / test`; the job name is `test`) |
+
+### Red state before the build
+Nothing runs on this commit: `main...HEAD` holds only the card file, and no workflow exists. Every criterion is unmet: no run, no check named `test`. That is the "new tests fail" state for new behaviour.
+
+### Sensitivity check for Build (kept behaviour is not the case here, but the pipeline must be shown able to fail)
+After the first green run, push one throwaway commit that changes the command in `ci.yml` to `mvn -B test -pl workflow-app` (its tests do not compile on a clean checkout). The job `test` must turn red. Then revert that commit (`git revert`) so the head is green and AC3 holds on the final file list. Keep the red run's link: Verify's evidence lists it.
+
+### Gaps
+- No executable test exists for AC1 to AC4; they are read from the pipeline's own record, which is also what Verify has to use.
+- AC2's counts come from the baseline in Assess (30, and 5 passed with 2 skipped); the first run is the first time they are measured on a hosted runner.
