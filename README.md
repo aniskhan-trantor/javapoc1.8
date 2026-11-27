@@ -418,7 +418,7 @@ Defaults are in `workflow-app/src/main/resources/application.properties`. Overri
 | `spark.job.jar` | `spark-job/target/spark-job-1.0.0-SNAPSHOT.jar` | Spark fat jar |
 | `spark.hbase.site` | `/etc/hbase/conf/hbase-site.xml` | Passed to `--files`; empty for local runs |
 | `debug.inmemory` | `false` | Debug server only: `true` uses in-memory fakes for HBase and Spark |
-| `activiti.jdbc.url` | `jdbc:h2:file:./data/activiti;...` | Workflow database (debug server) |
+| `activiti.jdbc.url` | `jdbc:h2:file:./data/activiti;...` | Workflow database (debug server). H2 is 2.x: a `./data/activiti*.db` file written by an older checkout (H2 1.4) will not open, so delete the `data/` folder once |
 
 The local debug app reads its HBase address from `workflow-app/src/test/resources/hbase-site.xml`. HBase advertises the name `host.docker.internal`, which Docker Desktop and Rancher Desktop add to your hosts file. If it does not resolve, add `127.0.0.1 host.docker.internal` to `C:\Windows\System32\drivers\etc\hosts` (as administrator).
 
