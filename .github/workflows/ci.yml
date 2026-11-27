@@ -23,3 +23,24 @@ jobs:
           cache: maven
       - name: Run tests
         run: mvn -B test -pl common,spark-job,workflow-app
+
+  # Java 17 migration, step 1: measure what breaks on newer JDKs. Compiles with --release 8, so only the
+  # toolchain and the runtime change. Never blocks a merge (continue-on-error); read the result per module.
+  jdk-compat:
+    name: jdk-compat (JDK ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['11', '17']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+      - name: Run tests on JDK ${{ matrix.java }} (compiled with --release 8)
+        run: mvn -B -fae test -pl common,spark-job,workflow-app -Dmaven.compiler.release=8
