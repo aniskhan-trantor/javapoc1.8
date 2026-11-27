@@ -15,7 +15,7 @@ A sales-batch workflow application. You upload a sales CSV, and the app:
 | UI | Angular 20 |
 
 This README gets you from a clean machine to a running, debuggable system in VS Code.
-For design details see [ARCHITECTURE.md](ARCHITECTURE.md).
+For design details see [latest-ARCHITECTURE.md](latest-ARCHITECTURE.md). AI agents working in this repository: read [AGENTS.md](AGENTS.md) first.
 
 ---
 
