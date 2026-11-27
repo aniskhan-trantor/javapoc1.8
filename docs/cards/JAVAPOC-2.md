@@ -57,3 +57,29 @@ No questions for the business meaning. No standing answer needed beyond SA-3.
 - Readiness scripts and containers not run (reason above).
 - HBase-dependent test is skipped everywhere HBase is absent, including the pipeline.
 - Java 8 on the hosted runner: Temurin 8; Scala 2.11 comes from the Maven build.
+
+## Plan, Archie, 2026-11-27
+
+### Slices
+Settled by the person's answer to JAVAPOC-Q4 (all three defaults accepted): this card is the pipeline on `common` and `spark-job`; a new card will restore workflow-app's tests and widen the pipeline (hold list lifted for it by a person); branch protection is set by a person with admin rights after the first green run. Not asked again.
+
+### Design
+- One new file, `.github/workflows/ci.yml`. No source, build or test file changes, so the hold list and SA-2 are untouched.
+- Triggers: `pull_request` and `push` to `main`.
+- Job `test` on `ubuntu-latest`: checkout, `actions/setup-java` with Temurin 8 and `cache: maven`, then `mvn -B test -pl common,spark-job`. The job name `test` is the check name a person will require on main.
+- No artifacts uploaded; Surefire results show in the run log. Publishing Jacoco reports is a later card.
+- Java 8 and Scala 2.11 are unchanged: the pipeline uses the repo's own Maven pins.
+- The HBase-dependent tests skip themselves (2 skipped), as on the baseline.
+- No codemod or recipe needed; one hand-written file.
+
+### Roadmap (2 steps)
+1. Add `.github/workflows/ci.yml`, push on `card/JAVAPOC-2`, open a draft pull request.
+2. Read the first run: `common` 30 pass; `spark-job` 5 pass, 2 skipped; run green. If it differs from the clean-clone baseline, fix the file only.
+
+### Decisions I took (SA-3)
+- nWave design and roadmap waves not run: for one 30-line file they add nothing; same reasoning as Assess. The fresh-context read of the design is done in Test design.
+- `-pl common,spark-job`, not the full reactor: workflow-app's tests do not compile on a clean checkout, so the full reactor is red until the next card.
+- Temurin 8 on a hosted runner, because the baseline was measured on Temurin 1.8.0_512.
+
+### Criteria
+Proposed to the person as the default set (on the card). They are the person's to write; the final text is copied from their answer.
