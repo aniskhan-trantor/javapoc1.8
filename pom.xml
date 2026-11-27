@@ -29,7 +29,7 @@
     <activiti.version>5.22.0</activiti.version>
     <jackson.version>2.15.4</jackson.version>
     <jetty.version>9.4.57.v20241219</jetty.version>
-    <h2.version>1.4.197</h2.version>
+    <h2.version>2.2.224</h2.version>
     <slf4j.version>1.7.30</slf4j.version>
     <junit.version>4.13.2</junit.version>
   </properties>
