@@ -110,3 +110,39 @@ Lead's check against the sources (each resolved in the design above):
 4. `AC5_only_readme` needs `origin/main` to be current: the script runs `git fetch origin main` first and fails with a clear message if it cannot. Added to Test design step 1.
 5. `AC1` checking a bare `17` is weak (any number with 17 passes). Resolved: check for `JDK 11` and `JDK 17`, or the phrase `11 and 17`.
 6. The technology table says "Java 8" for the API; that stays true (it builds for Java 8). Section 13 opens by saying the project builds and ships on Java 8, so the two do not contradict. Resolved: only the Spring version changes on line 12.
+
+## Test design, the card lead, 2026-11-28
+
+### Tests
+`docs/cards/JAVAPOC-16-acceptance.sh` (run: `bash docs/cards/JAVAPOC-16-acceptance.sh`; exit 0 all pass, 1 any fail, 2 cannot run). One check per criterion, name starting with its number, as in the Plan design, plus the two checks for the person's item 2:
+
+| Criterion | Test |
+|---|---|
+| AC1 | `AC1_section_listed_and_scope` |
+| AC2 | `AC2_local_command` |
+| AC3 | `AC3_spark_job_and_cluster` |
+| AC4 | `AC4_changes_and_link` |
+| AC5 | `AC5_only_readme` (the diff), plus the pipeline: existing tests unchanged and passing |
+| Q6 item 2 | `Q6a_spring_version`, `Q6b_backend_test_count` |
+
+No criterion without a test; no test without a criterion or the person's answer.
+
+### Red run
+On the test commit (the commit that adds this section and the script; `README.md` identical to `main` at 596d829), Git Bash on Windows:
+
+```
+FAIL AC1_section_listed_and_scope: no '## 13. Java 17' heading
+FAIL AC2_local_command: section 13 lacks 'mvn -B test -pl common,workflow-app -Dmaven.compiler.release=8'
+FAIL AC3_spark_job_and_cluster: section 13 lacks '`spark-job`' 'Spark 2.4' 'Scala 2.11' 'EMR 5.36' 'Java 8'
+FAIL AC4_changes_and_link: section 13 lacks 'Spring 5.3' 'H2 2.' '](#9-configuration)'
+PASS AC5_only_readme
+FAIL Q6a_spring_version: README still says 'Spring MVC 4.3'
+FAIL Q6b_backend_test_count: backend row does not end '| 69 |': | Java and Scala (`common`, `spark-job`, `workflow-app`) | `mvn clean test` | 67 |
+failures: 6
+exit=1
+```
+
+Each FAIL names the missing text, so it fails for the right reason, not a script error. `AC5_only_readme` passes here by design (only card documents changed so far); its sensitivity check (a scratch commit that touches another file must make it fail) is done in Build, in a throwaway worktree in the scratch folder.
+
+### Pipeline exemption
+AC5 forbids a workflow change, so the pipeline cannot run this script and cannot show the new tests failing. The red run above stands in. The pipeline's job on this card is the other half of AC5: the existing tests unchanged and passing with the Assess counts (67 pass and 2 skipped on JDK 8, 62 on JDK 11 and 17). The verifier reruns the script itself on the latest commit.
