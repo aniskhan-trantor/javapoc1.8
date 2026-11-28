@@ -70,3 +70,23 @@ jobs:
           cache: maven
       - name: Run spark-job tests on JDK ${{ matrix.java }} (compiled with --release 8)
         run: mvn -B test -pl spark-job -am -Dmaven.compiler.release=8
+
+  # The real batch path: a real HBase 1.4 (docker/local) with the repository tests and the real Spark job.
+  # The safety net for the HBase, Hadoop, Spark and Scala upgrades. Non-blocking until it has proved stable on
+  # the runners; the script fails if any of its tests was skipped.
+  integration:
+    name: integration (real HBase and Spark)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '8'
+          cache: maven
+      - name: Let the name HBase advertises (host.docker.internal) resolve to this machine
+        run: echo "127.0.0.1 host.docker.internal" | sudo tee -a /etc/hosts
+      - name: Run the integration tests
+        run: bash scripts/integration-test.sh
