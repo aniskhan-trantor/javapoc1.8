@@ -146,3 +146,37 @@ Each FAIL names the missing text, so it fails for the right reason, not a script
 
 ### Pipeline exemption
 AC5 forbids a workflow change, so the pipeline cannot run this script and cannot show the new tests failing. The red run above stands in. The pipeline's job on this card is the other half of AC5: the existing tests unchanged and passing with the Assess counts (67 pass and 2 skipped on JDK 8, 62 on JDK 11 and 17). The verifier reruns the script itself on the latest commit.
+
+Pipeline on the test commit 98279e3: run https://github.com/aniskhan-trantor/javapoc1.8/actions/runs/46116279916, success (existing tests only, as above).
+
+## Build, the card lead, 2026-11-28
+
+### What changed
+Commit acbf66a, `README.md` only: section 13 "Java 17" at the end (table of modules, the local JDK 17 command, why `spark-job` cannot yet, what changed with a link to section 9), its Contents line, a pointer from section 7, `Spring MVC 4.3` to `5.3` on the technology table, and the backend test count 67 to 69. The acceptance script is unchanged since the test commit 98279e3.
+
+### Green run
+`bash docs/cards/JAVAPOC-16-acceptance.sh` on acbf66a, Git Bash on Windows: all seven PASS, `failures: 0`, exit 0.
+
+### Sensitivity check
+In a throwaway worktree at acbf66a (scratch folder, removed afterwards; script `.prime/tmp/JAVAPOC-16/sensitivity.sh` in the programme folder), one fact broken at a time, README restored between:
+
+| Broken | Result |
+|---|---|
+| Contents line removed | FAIL AC1 (Contents lacks the line) |
+| `--release 8` removed | FAIL AC1 |
+| local command removed | FAIL AC2 |
+| "Java 8" removed from section 13 | FAIL AC3 |
+| "Scala 2.11" removed | FAIL AC3 |
+| link to section 9 removed | FAIL AC4 |
+| `Spring MVC 4.3` restored | FAIL Q6a |
+| `67` restored | FAIL Q6b |
+| a commit touching `pom.xml` | FAIL AC5 (names `pom.xml`) |
+
+Each break failed only its own check (`failures: 1` every time).
+
+### Note for the verifier
+The script is stored with LF endings. On Windows with `core.autocrlf=true` it is checked out with CRLF; Git Bash ran it here without trouble. If a shell complains about `\r`, strip them in the local checkout first (`sed -i 's/\r$//' docs/cards/JAVAPOC-16-acceptance.sh`; git sees no change, as the stored file is LF).
+
+### Exit criteria
+- Pipeline on the latest commit passes, the acceptance tests unchanged: see the done comment for the run; the script is unchanged since 98279e3.
+- Pull request ready for review: https://github.com/aniskhan-trantor/javapoc1.8/pull/11.
