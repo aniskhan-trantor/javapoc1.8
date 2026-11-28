@@ -43,3 +43,21 @@ Proceed. No source line changes, nothing on the hold list (`docker/`, runtime ve
 
 ### Next step
 Plan: the person writes numbered criteria (the lead may offer a draft with defaults), then design and roadmap committed here.
+
+## Plan, the card lead, 2026-11-28 (waiting on the person)
+
+One question asked on the card (criteria, and whether to fix the two stale README facts). No standing answer covers either (SA-1 to SA-4 checked; `relay standing JAVAPOC` has none).
+
+Proposed criteria (the person's once answered; copied to the card description word for word then):
+- AC1: README.md has a "Java 17" section, listed in Contents, saying `common` and `workflow-app` run on JDK 11 and 17 (compiled with `--release 8`) and are checked by the `java-compat` pipeline job.
+- AC2: The section gives the local JDK 17 test command `mvn -B test -pl common,workflow-app -Dmaven.compiler.release=8`.
+- AC3: The section says `spark-job` cannot run on JDK 11 or 17 yet (Spark 2.4 and Scala 2.11, "Unsupported class file major version") and that the cluster (EMR 5.36) runs Java 8.
+- AC4: The section names the changes made for Java 17 readiness: Spring 5.3, and H2 2.x with a link to section 9.
+- AC5: Only README.md changes (besides the card's own documents, SA-1); the existing tests are unchanged and the pipeline passes.
+
+Decision taken without asking (SA-3, machinery): the section goes at the end as "13. Java 17" so sections 1 to 12 and their anchors keep their numbers, with a one-line pointer from section 7.
+
+### Checkpoint
+- Learned: see Assess. Branch `card/JAVAPOC-16` pushed; worktree at `.prime/tmp/JAVAPOC-16/wt` in the programme folder.
+- Open: the person's answer to the Plan question.
+- Next step: copy the answered criteria to the card description, write design and roadmap here, have a fresh helper read it, then Test design.
