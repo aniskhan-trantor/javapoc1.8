@@ -1,0 +1,19 @@
+KILLED | Contents line points to a wrong anchor | failed: AC1_section_listed_and_scope 
+SURVIVED | JDK 11 and 17 replaced by JDK 11 only | failed: none
+KILLED | --release 8 changed to --release 11 | failed: AC1_section_listed_and_scope 
+SURVIVED | java-compat job name removed | failed: none
+SURVIVED | workflow-app row removed | failed: none
+KILLED | local command loses -Dmaven.compiler.release | failed: AC2_local_command 
+KILLED | local command adds spark-job | failed: AC2_local_command 
+KILLED | Scala 2.11 changed to Scala 2.12 | failed: AC3_spark_job_and_cluster 
+KILLED | EMR 5.36 changed to EMR 6.15 | failed: AC3_spark_job_and_cluster 
+SURVIVED | cluster Java 8 changed to Java 11 | failed: none
+KILLED | Spark 2.4 changed to Spark 3.3 | failed: AC3_spark_job_and_cluster 
+KILLED | Spring 5.3 changed to Spring 6.0 in section 13 | failed: AC4_changes_and_link 
+KILLED | H2 2.x changed to H2 1.4 in section 13 | failed: AC4_changes_and_link 
+KILLED | link to section 9 broken | failed: AC4_changes_and_link 
+KILLED | technology table back to Spring MVC 4.3 | failed: Q6a_spring_version 
+KILLED | backend test count changed to 68 | failed: Q6b_backend_test_count 
+KILLED | commit touching pom.xml | failed: AC5_only_readme 
+KILLED | commit touching ci.yml | failed: AC5_only_readme 
+KILLED | commit touching a test source | failed: AC5_only_readme 

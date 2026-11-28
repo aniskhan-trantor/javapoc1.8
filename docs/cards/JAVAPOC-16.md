@@ -180,3 +180,43 @@ The script is stored with LF endings. On Windows with `core.autocrlf=true` it is
 ### Exit criteria
 - Pipeline on the latest commit passes, the acceptance tests unchanged: see the done comment for the run; the script is unchanged since 98279e3.
 - Pull request ready for review: https://github.com/aniskhan-trantor/javapoc1.8/pull/11.
+
+## Verify, Verify, 2026-11-28
+
+Verdict: every criterion holds. One verifier only (see Gaps). Briefed from the tracker and this file; the README diff was read because the README is this card's artifact (no source code changed).
+
+### Where it ran
+- Fresh clones of `main` (596d829) and the PR head (258d50d) in the programme's scratch folder `.prime/tmp/JAVAPOC-16/`. The PR head's merge base is 596d829, so main is the right baseline.
+- Pipeline on the PR head 258d50d: run https://github.com/aniskhan-trantor/javapoc1.8/actions/runs/46116481882, `test`, `java-compat (JDK 11)` and `java-compat (JDK 17)` success; the two `spark-java-compat` jobs fail as they do on main (non-blocking, "Unsupported class file major version 55" and "61" in the log). Baseline: main run https://github.com/aniskhan-trantor/javapoc1.8/actions/runs/46013108111.
+- The acceptance script cannot run in the pipeline: AC5 (the person's) rules out a workflow change. Stand-in for the pipeline: the script run from the fresh PR-head clone in Git Bash. A clean Linux container was not available to this run (Docker needs a person's approval here).
+
+### Per criterion
+| Criterion | Test | Run | Result |
+|---|---|---|---|
+| AC1 | `AC1_section_listed_and_scope` | stand-in, fresh clone at 258d50d | PASS |
+| AC2 | `AC2_local_command` | stand-in, fresh clone at 258d50d | PASS |
+| AC3 | `AC3_spark_job_and_cluster` | stand-in, fresh clone at 258d50d | PASS |
+| AC4 | `AC4_changes_and_link` | stand-in, fresh clone at 258d50d | PASS |
+| AC5 | `AC5_only_readme`, plus the pipeline | stand-in; pipeline run 46116481882 | PASS; pipeline success, test counts identical to main (below) |
+| Q6 item 2 | `Q6a_spring_version`, `Q6b_backend_test_count` | stand-in, fresh clone at 258d50d | PASS |
+
+Red run: the same script on the fresh `main` clone fails six of seven (AC1 to AC4, Q6a, Q6b; AC5 passes by design), the same lines as the builder's red run on 98279e3 in "Test design" above. Pipeline on the test commit: https://github.com/aniskhan-trantor/javapoc1.8/actions/runs/46116279916.
+
+Facts checked by reading against their sources, not only by the script: Spring 5.3.39, H2 2.2.224, Spark 2.4.8 and Scala 2.11 match `pom.xml`; the command matches `.github/workflows/ci.yml` line 50 and the job names exist; "Unsupported class file major version 55 / 61" is in the pipeline log; EMR 5.36 matches the readiness doc and README's own technology table; `## 9. Configuration` exists and its `activiti.jdbc.url` row carries the H2 2.x note; 69 = 30 + 32 + 7 tests in the `test` job.
+
+### Side-by-side
+- Code: `git diff origin/main HEAD` touches `README.md` and `docs/cards/JAVAPOC-16*` only. No source, build, test or workflow file differs, so the built artifacts and public API are the same by construction; the input sweep and environment axis have nothing to vary.
+- Pipeline: per-job test totals (Surefire summaries) of the main run and the PR-head run are identical, every job (`test` 30 / 32 / 7 with 2 skipped; `java-compat` 30 / 32 on JDK 11 and 17; `spark-java-compat` 30 and 7 with 2 errors, 2 skipped, both JDKs).
+- Known-differences ledger: none on the card, and none needed; no difference found.
+
+### Sensitivity check
+Verify's own 19 single-fault mutants of README (and three commits touching other files), not the builder's recipe: `docs/cards/JAVAPOC-16-verify-mutants.sh`, results `docs/cards/JAVAPOC-16-verify-mutants.txt`. 15 KILLED by the named check; every check is killed by at least one mutant. 4 SURVIVED, a finding about the checks, not the README:
+- "JDK 11 and 17" cut to "JDK 11": AC1 still passes, because "JDK 17" appears in the local-command paragraph.
+- "the `java-compat` pipeline job" removed: AC1 passes, because `spark-java-compat` contains `java-compat`.
+- the `workflow-app` table row removed: AC1 passes, because `` `workflow-app` `` appears in the "What changed" list.
+- the cluster's "Java 8" changed to "Java 11": AC3 passes, because "Java 8" appears in the section's first line.
+The checks test that words are present in section 13, not that they sit in the right sentence. They are a docs card's checks and are not run by the pipeline, so they guard only this card; the README itself was read and meets each criterion. Not a send-back; noted for the person in the accept question.
+
+### Gaps
+- Second verifier (the workflow's `verifiers: 2`, on Sonnet): not started. This run has no subagent tool and the `claude` command line needs a person's approval. One verdict, not two.
+- "Every criterion's test passed in the pipeline": holds for AC5's pipeline half; AC1 to AC4 and Q6 run on the stand-in only, because the person's AC5 forbids the workflow change that would put them in the pipeline.
