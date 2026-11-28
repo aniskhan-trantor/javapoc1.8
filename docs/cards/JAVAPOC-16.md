@@ -44,20 +44,69 @@ Proceed. No source line changes, nothing on the hold list (`docker/`, runtime ve
 ### Next step
 Plan: the person writes numbered criteria (the lead may offer a draft with defaults), then design and roadmap committed here.
 
-## Plan, the card lead, 2026-11-28 (waiting on the person)
+## Plan, the card lead, 2026-11-28
 
-One question asked on the card (criteria, and whether to fix the two stale README facts). No standing answer covers either (SA-1 to SA-4 checked; `relay standing JAVAPOC` has none).
+### Criteria (the person's)
+Question JAVAPOC-Q6 was answered by the person on 2026-11-28 (defaults accepted). Copied word for word onto the card description:
+- AC1 a Java 17 section, listed in Contents, says common and workflow-app run on JDK 11 and 17 (compiled with --release 8), checked by the java-compat job.
+- AC2 it gives the local command mvn -B test -pl common,workflow-app -Dmaven.compiler.release=8.
+- AC3 it says spark-job cannot run on JDK 11 or 17 yet (Spark 2.4, Scala 2.11) and the cluster (EMR 5.36) runs Java 8.
+- AC4 it names Spring 5.3 and H2 2.x, linking section 9.
+- AC5 only README.md changes; existing tests unchanged, pipeline passes.
+- Item 2 of the same answer: fix the two stale README facts (Spring MVC 4.3, 67 tests) in this card. Not a numbered criterion; checked by two extra checks (Q6a, Q6b below).
 
-Proposed criteria (the person's once answered; copied to the card description word for word then):
-- AC1: README.md has a "Java 17" section, listed in Contents, saying `common` and `workflow-app` run on JDK 11 and 17 (compiled with `--release 8`) and are checked by the `java-compat` pipeline job.
-- AC2: The section gives the local JDK 17 test command `mvn -B test -pl common,workflow-app -Dmaven.compiler.release=8`.
-- AC3: The section says `spark-job` cannot run on JDK 11 or 17 yet (Spark 2.4 and Scala 2.11, "Unsupported class file major version") and that the cluster (EMR 5.36) runs Java 8.
-- AC4: The section names the changes made for Java 17 readiness: Spring 5.3, and H2 2.x with a link to section 9.
-- AC5: Only README.md changes (besides the card's own documents, SA-1); the existing tests are unchanged and the pipeline passes.
+Standing answers used: SA-1 (this card file and `docs/cards/JAVAPOC-16-*` do not count against AC5's "only README.md"), SA-2 (existing tests unchanged), SA-3 (tool and layout choices below are the lead's).
 
-Decision taken without asking (SA-3, machinery): the section goes at the end as "13. Java 17" so sections 1 to 12 and their anchors keep their numbers, with a one-line pointer from section 7.
+### Design
+All edits in `README.md`:
+1. New last section `## 13. Java 17` (anchor `#13-java-17`), so sections 1 to 12 keep their numbers and anchors. Contents gets `13. [Java 17](#13-java-17)`. Section 7 gets one line: "To run the tests on JDK 17, see [13. Java 17](#13-java-17)."
+2. Section 13 content (facts checked against the sources):
+   - A short table: `common` and `workflow-app` run on JDK 11 and 17, compiled with `--release 8`, checked by the `java-compat` pipeline job (JDK 11 and 17); `spark-job` not yet, shown by the non-blocking `spark-java-compat` job, which is expected to fail. Source: `.github/workflows/ci.yml` lines 32-72.
+   - The local command in a code block: `mvn -B test -pl common,workflow-app -Dmaven.compiler.release=8`, run with `JAVA_HOME` on a JDK 17.
+   - Why not `spark-job`: Spark 2.4 (2.4.8) and Scala 2.11 read class files with an old ASM and fail with "Unsupported class file major version" (55 on JDK 11, 61 on JDK 17). The target cluster, EMR 5.36, runs Java 8, so the job keeps running on Java 8 there; moving it needs a newer Spark and an EMR release with Java 17, a decision outside this repository. Source: readiness doc lines 13, 43.
+   - What changed for Java 17 readiness: Spring 4.3 to 5.3 (5.3.39, `pom.xml` line 28; it fixed `workflow-app`'s errors on JDK 17), and H2 1.4 to 2.x (2.2.224, `pom.xml` line 32), with a link to [9. Configuration](#9-configuration) for the `activiti.jdbc.url` note on old database files (not repeated).
+3. Stale facts (person's item 2): line 12 `Spring MVC 4.3` becomes `Spring MVC 5.3`; section 7's backend row `67` becomes `69` (67 pass and 2 skip without HBase, per the bullet under the table; pipeline run 46013108111).
 
-### Checkpoint
-- Learned: see Assess. Branch `card/JAVAPOC-16` pushed; worktree at `.prime/tmp/JAVAPOC-16/wt` in the programme folder.
-- Open: the person's answer to the Plan question.
-- Next step: copy the answered criteria to the card description, write design and roadmap here, have a fresh helper read it, then Test design.
+Not changed (outside AC5's one file): `AGENTS.md` ("30 + 7 (2 skipped) + 29") and `latest-ARCHITECTURE.md` may hold the same stale facts. Left for another card; noted here only.
+
+### Acceptance tests (for Test design)
+A bash script `docs/cards/JAVAPOC-16-acceptance.sh` (a card document, SA-1, so AC5 holds; bash and grep run in Git Bash and on the Linux runner). One check function per criterion, named from its number; each prints `PASS` or `FAIL <name>: <what is missing>`, and the script exits 1 if any fails. Section text = from `## 13. Java 17` to the next `## ` or the end of the file.
+- `AC1_section_listed_and_scope`: the heading exists; Contents has `13. [Java 17](#13-java-17)`; the section has `common`, `workflow-app`, `JDK 11`, `17`, `--release 8`, `java-compat`.
+- `AC2_local_command`: the section has the exact string `mvn -B test -pl common,workflow-app -Dmaven.compiler.release=8`.
+- `AC3_spark_job_and_cluster`: the section has `spark-job`, `Spark 2.4`, `Scala 2.11`, `EMR 5.36`, `Java 8`.
+- `AC4_changes_and_link`: the section has `Spring 5.3`, `H2 2.`, `](#9-configuration)`.
+- `AC5_only_readme`: `git diff --name-only $(git merge-base origin/main HEAD) HEAD` lists only `README.md` and `docs/cards/JAVAPOC-16*`. The rest of AC5 (existing tests unchanged and passing) is the pipeline: same counts as Assess (67 pass and 2 skipped on JDK 8, 62 on JDK 11 and 17).
+- `Q6a_spring_version`: README has `Spring MVC 5.3` on the `| API and workflow |` row and no `Spring MVC 4.3`.
+- `Q6b_backend_test_count`: section 7's backend row ends `| 69 |`, and no row there says `| 67 |`.
+
+Pipeline: AC5 forbids a workflow change, so the pipeline cannot run the script; the card is exempt from "the pipeline shows the new tests failing". Proof of red instead: the script's output on the test commit (README untouched), recorded here with the commit hash; AC5 is expected to pass on that commit already. The pipeline proves the existing tests stay unchanged and green.
+
+### Roadmap
+Test design:
+1. Write the script as above; run it on the branch with README untouched; expect AC1 to AC4, Q6a, Q6b to fail and AC5 to pass. Record the output.
+2. Sensitivity: confirm each check fails for the right reason (its FAIL line names the missing text), not for a script error.
+3. Commit the script and this file; push; open a draft pull request; link it from the card. Record the pipeline exemption.
+Build:
+4. Add section 13, the Contents line and the pointer in section 7.
+5. Fix line 12 and the section 7 count.
+6. Run the script: all PASS. Push; check the pipeline on that commit passes with the same counts; check the diff is README.md plus card documents only; mark the pull request ready for review.
+
+### Decisions taken without asking (SA-3)
+- Section at the end as 13, not a renumbered 8: no anchors break.
+- Acceptance tests as a script in `docs/cards/`, not a JUnit test: a test in a module would break AC5.
+
+### Exit criteria
+- Numbered criteria written by a person are on the card: yes, JAVAPOC-Q6 answer, copied to the card description.
+- Design and roadmap committed on the card's branch: yes, this section (commit in the done comment).
+- A fresh-context helper read the design, every finding resolved or answered: gap, see "Design review" below.
+
+### Design review
+Gap: no helper with fresh context could be started from this session. It has no subagent tool, and running the `claude` command line from the shell needs a person's approval, which a non-interactive run cannot get. Recorded as a gap outside the card (charter: write it down and go on). In its place: (a) the lead checked the design against its sources, findings below; (b) Review on this card is blind and comes with fresh context, so an independent reader still sees the result before Verify.
+
+Lead's check against the sources (each resolved in the design above):
+1. Facts: `--release 8` and the two commands match `.github/workflows/ci.yml` lines 30, 50, 72; Spring 5.3.39 and H2 2.2.224 match `pom.xml` lines 28 and 32; "Unsupported class file major version 55 / 61" and EMR 5.36 on Java 8 match the readiness doc lines 13 and 43. Resolved: no change.
+2. The anchor `#13-java-17` is GitHub's slug for `## 13. Java 17` (the same pattern as `#7-build-and-test`). Resolved: no change.
+3. 69 is right for `mvn clean test`: Surefire counts 69 tests run; the 2 HBase tests skip when HBase is down (the bullet under the table already says so). Resolved: write 69.
+4. `AC5_only_readme` needs `origin/main` to be current: the script runs `git fetch origin main` first and fails with a clear message if it cannot. Added to Test design step 1.
+5. `AC1` checking a bare `17` is weak (any number with 17 passes). Resolved: check for `JDK 11` and `JDK 17`, or the phrase `11 and 17`.
+6. The technology table says "Java 8" for the API; that stays true (it builds for Java 8). Section 13 opens by saying the project builds and ships on Java 8, so the two do not contradict. Resolved: only the Spring version changes on line 12.
