@@ -9,7 +9,7 @@ A sales-batch workflow application. You upload a sales CSV, and the app:
 
 | Layer | Technology |
 |---|---|
-| API and workflow | Java 8, Spring MVC 4.3, Activiti 5.22, embedded Jetty |
+| API and workflow | Java 8, Spring MVC 5.3, Activiti 5.22, embedded Jetty |
 | Batch job | Scala 2.11 on Spark 2.4.8 (target runtime: EMR 5.36) |
 | Storage | HBase 1.4 (runs in Docker) |
 | UI | Angular 20 |
@@ -33,6 +33,7 @@ For design details see [latest-ARCHITECTURE.md](latest-ARCHITECTURE.md). AI agen
 10. [Optional: Postgres for workflow state](#10-optional-postgres-for-workflow-state)
 11. [Troubleshooting](#11-troubleshooting)
 12. [Project layout](#12-project-layout)
+13. [Java 17](#13-java-17)
 
 ---
 
@@ -332,7 +333,7 @@ Produces `spark-job/target/spark-job-1.0.0-SNAPSHOT.jar` (about 29 MB) and `work
 
 | What | Command | Tests |
 |---|---|---|
-| Java and Scala (`common`, `spark-job`, `workflow-app`) | `mvn clean test` | 67 |
+| Java and Scala (`common`, `spark-job`, `workflow-app`) | `mvn clean test` | 69 |
 | Angular UI | `cd ui && npx ng test --watch=false --browsers=ChromeHeadless --code-coverage` | 25 |
 
 - Coverage: `<module>/target/site/jacoco/index.html` for the backend, `ui/coverage/` for the UI.
@@ -340,6 +341,7 @@ Produces `spark-job/target/spark-job-1.0.0-SNAPSHOT.jar` (about 29 MB) and `work
 - UI tests need Chrome. Set `CHROME_BIN` if it is not found.
 - If a run crashes with `TypeNotPresentExceptionProxy`, it is stale output: run `mvn clean test`.
 - After `mvn clean`, rebuild the classpath file: `mvn -pl spark-job -am compile dependency:build-classpath -Dmdep.outputFile=target/local-classpath.txt`.
+- To run the tests on JDK 17, see [13. Java 17](#13-java-17).
 
 ---
 
@@ -495,3 +497,32 @@ Notes:
 - The Spark job bundles the HBase client and relocates Guava, because EMR does not put HBase on Spark's classpath. Spark and Hadoop are `provided`.
 - Runs are asynchronous. A failing step does not throw; it records the reason and the run ends `FAILED`. The HBase table `batch_audit` keeps each run's status and failure reason.
 - Behaviour on YARN or EMR has not been tested; local runs use `local[*]` or the Docker standalone cluster.
+
+---
+
+## 13. Java 17
+
+The project builds and ships on Java 8. Part of it already runs on JDK 11 and 17:
+
+| Module | Runs on JDK 11 and 17 | Checked by |
+|---|---|---|
+| `common` | Yes, compiled with `--release 8` | the `java-compat` pipeline job (JDK 11 and 17) |
+| `workflow-app` | Yes, compiled with `--release 8` | the `java-compat` pipeline job (JDK 11 and 17) |
+| `spark-job` | Not yet | the `spark-java-compat` job, which does not block the pipeline and is expected to fail |
+
+### Run the tests on JDK 17
+
+With `JAVA_HOME` pointing at a JDK 17 (check with `java -version`):
+
+```
+mvn -B test -pl common,workflow-app -Dmaven.compiler.release=8
+```
+
+### Why `spark-job` cannot run on JDK 11 or 17 yet
+
+`spark-job` uses Spark 2.4 (2.4.8) and Scala 2.11. Spark 2.4 reads class files with an old ASM, and its tests fail with "Unsupported class file major version" (55 on JDK 11, 61 on JDK 17). The target cluster, EMR 5.36, runs Java 8, so the job keeps running on Java 8 there. Moving it needs a newer Spark and an EMR release with Java 17, a decision outside this repository.
+
+### What changed for Java 17 readiness
+
+- Spring 4.3 to Spring 5.3 (5.3.39): this fixed `workflow-app`'s errors on JDK 17.
+- H2 1.4 to H2 2.x (2.2.224): a workflow database file written by an older checkout will not open. See the `activiti.jdbc.url` row in [9. Configuration](#9-configuration).
